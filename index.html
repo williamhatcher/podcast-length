@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Podcast Length Calculator</title>
+  <!-- Latest compiled and minified CSS -->
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+
+</head>
+<body>
+  <div class="container">
+    <h1>Podcast Length Calculator</h1>
+    <div class="row">
+      <form>
+        <div class="form-group" id="podcast-form">
+          <label class="control-label sr-only" for="podcast-url" >Podcast URL</label>
+          <input type="url" class="form-control" id="podcast-url" placeholder="RSS/Atom/iTunes Feed URL">
+        </div>
+    </form>
+  </div>
+  <div class="row">
+    <h3>About <span id="hours">0</span> hours</h3>
+    <h3><span id="breakdown">0 days, 0 hours, 0 minutes, and 0 seconds</span></h3>
+  </div>
+  <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+  <!-- Latest compiled and minified JavaScript -->
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.18.1/moment.min.js" integrity="sha256-1hjUhpc44NwiNg8OwMu2QzJXhD8kcj+sJA3aCQZoUjg=" crossorigin="anonymous"></script>
+  <script>
+  $("#podcast-url").on('input', function() {
+    if ("" == $("#podcast-url").val()) {
+      $("#hours").text("0");
+      $("#breakdown").text("0 days, 0 hours, 0 minutes, and 0 seconds");
+      $("#podcast-form").removeClass("has-error").removeClass("has-success");
+      return false;
+    }
+  $.ajax({
+    url: "http://query.yahooapis.com/v1/public/yql",
+    jsonp: "callback",
+
+    // tell jQuery we're expecting JSONP
+    dataType: "jsonp",
+
+    // tell YQL what we want and that we want JSON
+    data: {
+        q: "select duration from rss where url='" + $("#podcast-url").val() + "'",
+        format: "json"
+    },
+    error: function( response ) {
+      $("#hours").text("0");
+      $("#breakdown").text("0 days, 0 hours, 0 minutes, and 0 seconds");
+      $("#podcast-form").removeClass("has-success");
+      $("#podcast-form").addClass("has-error");
+    },
+    success: function( response ) {
+      var items;
+      try {
+        items = response.query.results.item;
+      } catch (e) {
+        $("#podcast-form").addClass("has-error");
+      }
+      if (items) {
+        $("#podcast-form").removeClass("has-error");
+        $("#podcast-form").addClass("has-success");
+
+        var total = moment.duration(items[0].duration, "HH:mm:ss");
+        for (var i = 1; i < items.length; i++) {
+          total = total.add(moment.duration(items[i].duration, "HH:mm:ss"));
+        }
+        $("#hours").text(Math.round((total.days() * 24) + (total.hours())
+        + (total.minutes()/60) + (total.seconds()/3600)));
+        $("#breakdown").text(total.days() + " days, " + total.hours() + " hours, "
+        + total.minutes() + " minutes, and " + total.seconds() + " seconds");
+      }
+    }
+  })});
+  </script>
+</body>
+</html>
